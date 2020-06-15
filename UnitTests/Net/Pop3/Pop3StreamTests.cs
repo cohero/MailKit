@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Security.Cryptography;
 
 using NUnit.Framework;
@@ -42,7 +43,7 @@ namespace UnitTests.Net.Pop3 {
 		[Test]
 		public void TestCanReadWriteSeek ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				Assert.IsTrue (stream.CanRead);
 				Assert.IsTrue (stream.CanWrite);
 				Assert.IsFalse (stream.CanSeek);
@@ -53,7 +54,7 @@ namespace UnitTests.Net.Pop3 {
 		[Test]
 		public void TestGetSetTimeouts ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				stream.ReadTimeout = 5;
 				Assert.AreEqual (5, stream.ReadTimeout, "ReadTimeout");
 
@@ -65,7 +66,7 @@ namespace UnitTests.Net.Pop3 {
 		[Test]
 		public void TestRead ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("+OK\r\n");
 				var buffer = new byte[16];
 
@@ -87,21 +88,21 @@ namespace UnitTests.Net.Pop3 {
 		}
 
 		[Test]
-		public async void TestReadAsync ()
+		public async Task TestReadAsync ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("+OK\r\n");
 				var buffer = new byte[16];
 
-				Assert.Throws<ArgumentNullException> (async () => await stream.ReadAsync (null, 0, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, -1, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, 0, -1));
+				Assert.ThrowsAsync<ArgumentNullException> (async () => await stream.ReadAsync (null, 0, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, -1, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, 0, -1));
 
 				stream.Stream.Write (data, 0, data.Length);
 				stream.Stream.Position = 0;
 
 				stream.Mode = Pop3StreamMode.Line;
-				Assert.Throws<InvalidOperationException> (async () => await stream.ReadAsync (buffer, 0, buffer.Length));
+				Assert.ThrowsAsync<InvalidOperationException> (async () => await stream.ReadAsync (buffer, 0, buffer.Length));
 
 				stream.Mode = Pop3StreamMode.Data;
 				var n = await stream.ReadAsync (buffer, 0, buffer.Length);
@@ -113,7 +114,7 @@ namespace UnitTests.Net.Pop3 {
 		[Test]
 		public void TestSeek ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				Assert.Throws<NotSupportedException> (() => stream.Seek (0, SeekOrigin.Begin));
 				Assert.Throws<NotSupportedException> (() => stream.Position = 500);
 				Assert.AreEqual (0, stream.Position);
@@ -124,7 +125,7 @@ namespace UnitTests.Net.Pop3 {
 		[Test]
 		public void TestSetLength ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				Assert.Throws<NotSupportedException> (() => stream.SetLength (500));
 			}
 		}
@@ -132,7 +133,7 @@ namespace UnitTests.Net.Pop3 {
 		[Test]
 		public void TestWrite ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var memory = (MemoryStream) stream.Stream;
 				var buffer = new byte[8192];
 				var buf1k = new byte[1024];
@@ -196,9 +197,9 @@ namespace UnitTests.Net.Pop3 {
 		}
 
 		[Test]
-		public async void TestWriteAsync ()
+		public async Task TestWriteAsync ()
 		{
-			using (var stream = new Pop3Stream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new Pop3Stream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var memory = (MemoryStream) stream.Stream;
 				var buffer = new byte[8192];
 				var buf1k = new byte[1024];

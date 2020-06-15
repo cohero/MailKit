@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -107,6 +107,39 @@ namespace MailKit {
 		/// </remarks>
 		/// <value>The folder attributes.</value>
 		public FolderAttributes Attributes {
+			get; internal protected set;
+		}
+
+		/// <summary>
+		/// Get the annotation access level.
+		/// </summary>
+		/// <remarks>
+		/// If annotations are supported, this property can be used to determine whether or not
+		/// the <see cref="IMailFolder"/> supports reading and writing annotations.
+		/// </remarks>
+		public AnnotationAccess AnnotationAccess {
+			get; internal protected set;
+		}
+
+		/// <summary>
+		/// Get the supported annotation scopes.
+		/// </summary>
+		/// <remarks>
+		/// If annotations are supported, this property can be used to determine which
+		/// annotation scopes are supported by the <see cref="IMailFolder"/>.
+		/// </remarks>
+		public AnnotationScope AnnotationScopes {
+			get; internal protected set;
+		}
+
+		/// <summary>
+		/// Get the maximum size of annotation values supported by the folder.
+		/// </summary>
+		/// <remarks>
+		/// If annotations are supported, this property can be used to determine the
+		/// maximum size of annotation values supported by the <see cref="IMailFolder"/>.
+		/// </remarks>
+		public uint MaxAnnotationSize {
 			get; internal protected set;
 		}
 
@@ -243,12 +276,14 @@ namespace MailKit {
 		/// Get whether or not the folder supports mod-sequences.
 		/// </summary>
 		/// <remarks>
+		/// <para>Gets whether or not the folder supports mod-sequences.</para>
 		/// <para>If mod-sequences are not supported by the folder, then all of the APIs that take a modseq
 		/// argument will throw <see cref="System.NotSupportedException"/> and should not be used.</para>
 		/// </remarks>
 		/// <value><c>true</c> if supports mod-sequences; otherwise, <c>false</c>.</value>
+		[Obsolete ("Use Supports (FolderFeature.ModSequences) instead.")]
 		public bool SupportsModSeq {
-			get; protected set;
+			get { return Supports (FolderFeature.ModSequences); }
 		}
 
 		/// <summary>
@@ -363,6 +398,25 @@ namespace MailKit {
 		public int Count {
 			get; protected set;
 		}
+
+		/// <summary>
+		/// Get the threading algorithms supported by the folder.
+		/// </summary>
+		/// <remarks>
+		/// Get the threading algorithms supported by the folder.
+		/// </remarks>
+		/// <value>The supported threading algorithms.</value>
+		public abstract HashSet<ThreadingAlgorithm> ThreadingAlgorithms { get; }
+
+		/// <summary>
+		/// Determine whether or not a <see cref="MailFolder"/> supports a feature.
+		/// </summary>
+		/// <remarks>
+		/// Determines whether or not a <see cref="MailFolder"/> supports a feature.
+		/// </remarks>
+		/// <param name="feature">The desired feature.</param>
+		/// <returns><c>true</c> if the feature is supported; otherwise, <c>false</c>.</returns>
+		public abstract bool Supports (FolderFeature feature);
 
 		/// <summary>
 		/// Opens the folder using the requested folder access.
@@ -2896,6 +2950,102 @@ namespace MailKit {
 		/// Appends the specified message to the folder and returns the UniqueId assigned to the message.
 		/// </remarks>
 		/// <returns>The UID of the appended message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="annotations">The message annotations.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="message"/> is <c>null</c>.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// One or more <paramref name="annotations"/> does not define any properties.
+		/// </exception>"
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public virtual UniqueId? Append (MimeMessage message, MessageFlags flags, DateTimeOffset? date, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return Append (FormatOptions.Default, message, flags, date, annotations, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Asynchronously append the specified message to the folder.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously appends the specified message to the folder and returns the UniqueId assigned to the message.
+		/// </remarks>
+		/// <returns>The UID of the appended message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="annotations">The message annotations.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="message"/> is <c>null</c>.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// One or more <paramref name="annotations"/> does not define any properties.
+		/// </exception>"
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public virtual Task<UniqueId?> AppendAsync (MimeMessage message, MessageFlags flags, DateTimeOffset? date, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return AppendAsync (FormatOptions.Default, message, flags, date, annotations, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Append the specified message to the folder.
+		/// </summary>
+		/// <remarks>
+		/// Appends the specified message to the folder and returns the UniqueId assigned to the message.
+		/// </remarks>
+		/// <returns>The UID of the appended message, if available; otherwise, <c>null</c>.</returns>
 		/// <param name="options">The formatting options.</param>
 		/// <param name="message">The message.</param>
 		/// <param name="flags">The message flags.</param>
@@ -3086,6 +3236,108 @@ namespace MailKit {
 		/// The command failed.
 		/// </exception>
 		public abstract Task<UniqueId?> AppendAsync (FormatOptions options, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Append the specified message to the folder.
+		/// </summary>
+		/// <remarks>
+		/// Appends the specified message to the folder and returns the UniqueId assigned to the message.
+		/// </remarks>
+		/// <returns>The UID of the appended message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="annotations">The message annotations.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// Internationalized formatting was requested but is not supported by the server.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract UniqueId? Append (FormatOptions options, MimeMessage message, MessageFlags flags, DateTimeOffset? date, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Asynchronously append the specified message to the folder.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously appends the specified message to the folder and returns the UniqueId assigned to the message.
+		/// </remarks>
+		/// <returns>The UID of the appended message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="annotations">The message annotations.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// Internationalized formatting was requested but is not supported by the server.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract Task<UniqueId?> AppendAsync (FormatOptions options, MimeMessage message, MessageFlags flags, DateTimeOffset? date, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
 
 		/// <summary>
 		/// Append the specified messages to the folder.
@@ -3522,6 +3774,874 @@ namespace MailKit {
 		/// The command failed.
 		/// </exception>
 		public abstract Task<IList<UniqueId>> AppendAsync (FormatOptions options, IList<MimeMessage> messages, IList<MessageFlags> flags, IList<DateTimeOffset> dates, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual UniqueId? Replace (UniqueId uid, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return Replace (FormatOptions.Default, uid, message, flags, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual Task<UniqueId?> ReplaceAsync (UniqueId uid, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return ReplaceAsync (FormatOptions.Default, uid, message, flags, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual UniqueId? Replace (UniqueId uid, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return Replace (FormatOptions.Default, uid, message, flags, date, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual Task<UniqueId?> ReplaceAsync (UniqueId uid, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return ReplaceAsync (FormatOptions.Default, uid, message, flags, date, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract UniqueId? Replace (FormatOptions options, UniqueId uid, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract Task<UniqueId?> ReplaceAsync (FormatOptions options, UniqueId uid, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract UniqueId? Replace (FormatOptions options, UniqueId uid, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="uid">The UID of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract Task<UniqueId?> ReplaceAsync (FormatOptions options, UniqueId uid, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual UniqueId? Replace (int index, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return Replace (FormatOptions.Default, index, message, flags, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual Task<UniqueId?> ReplaceAsync (int index, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return ReplaceAsync (FormatOptions.Default, index, message, flags, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual UniqueId? Replace (int index, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return Replace (FormatOptions.Default, index, message, flags, date, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public virtual Task<UniqueId?> ReplaceAsync (int index, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null)
+		{
+			return ReplaceAsync (FormatOptions.Default, index, message, flags, date, cancellationToken, progress);
+		}
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract UniqueId? Replace (FormatOptions options, int index, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract Task<UniqueId?> ReplaceAsync (FormatOptions options, int index, MimeMessage message, MessageFlags flags = MessageFlags.None, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract UniqueId? Replace (FormatOptions options, int index, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
+
+		/// <summary>
+		/// Asynchronously replace a message in the folder.
+		/// </summary>
+		/// <remarks>
+		/// Replaces the specified message in the folder and returns the UniqueId assigned to the new message.
+		/// </remarks>
+		/// <returns>The UID of the new message, if available; otherwise, <c>null</c>.</returns>
+		/// <param name="options">The formatting options.</param>
+		/// <param name="index">The index of the message to be replaced.</param>
+		/// <param name="message">The message.</param>
+		/// <param name="flags">The message flags.</param>
+		/// <param name="date">The received date of the message.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <param name="progress">The progress reporting mechanism.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="options"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="message"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentOutOfRangeException">
+		/// <paramref name="index"/> is out of range.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Internationalized formatting was requested but has not been enabled.
+		/// </exception>
+		/// <exception cref="FolderNotFoundException">
+		/// The <see cref="MailFolder"/> does not exist.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="MailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>Internationalized formatting was requested but is not supported by the server.</para>
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The server replied with a NO or BAD response.
+		/// </exception>
+		public abstract Task<UniqueId?> ReplaceAsync (FormatOptions options, int index, MimeMessage message, MessageFlags flags, DateTimeOffset date, CancellationToken cancellationToken = default (CancellationToken), ITransferProgress progress = null);
 
 		/// <summary>
 		/// Copy the specified message to the destination folder.
@@ -7404,7 +8524,7 @@ namespace MailKit {
 
 			if (count < 0)
 				throw new ArgumentOutOfRangeException (nameof (count));
-			
+
 			return GetStreamAsync (uid, part.PartSpecifier, offset, count, cancellationToken, progress);
 		}
 
@@ -7544,7 +8664,7 @@ namespace MailKit {
 
 			if (count < 0)
 				throw new ArgumentOutOfRangeException (nameof (count));
-			
+
 			return GetStreamAsync (index, part.PartSpecifier, offset, count, cancellationToken, progress);
 		}
 
@@ -13110,6 +14230,618 @@ namespace MailKit {
 		public abstract Task<IList<int>> SetLabelsAsync (IList<int> indexes, ulong modseq, IList<string> labels, bool silent, CancellationToken cancellationToken = default (CancellationToken));
 
 		/// <summary>
+		/// Store the annotations for the specified message.
+		/// </summary>
+		/// <remarks>
+		/// Stores the annotations for the specified message.
+		/// </remarks>
+		/// <param name="uid">The UID of the message.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="annotations"/> is <c>null</c>.
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public virtual void Store (UniqueId uid, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken))
+		{
+			Store (new [] { uid }, annotations, cancellationToken);
+		}
+
+		/// <summary>
+		/// Asynchronously store the annotations for the specified message.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously stores the annotations for the specified message.
+		/// </remarks>
+		/// <returns>An asynchronous task context.</returns>
+		/// <param name="uid">The UID of the message.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="annotations"/> is <c>null</c>.
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="uid"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public virtual Task StoreAsync (UniqueId uid, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken))
+		{
+			return StoreAsync (new [] { uid }, annotations, cancellationToken);
+		}
+
+		/// <summary>
+		/// Store the annotations for the specified messages.
+		/// </summary>
+		/// <remarks>
+		/// Stores the annotations for the specified messages.
+		/// </remarks>
+		/// <param name="uids">The UIDs of the messages.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="uids"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="uids"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract void Store (IList<UniqueId> uids, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Asynchronously store the annotations for the specified messages.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously stores the annotations for the specified messages.
+		/// </remarks>
+		/// <returns>An asynchronous task context.</returns>
+		/// <param name="uids">The UIDs of the messages.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="uids"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="uids"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract Task StoreAsync (IList<UniqueId> uids, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Store the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </summary>
+		/// <remarks>
+		/// Stores the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </remarks>
+		/// <returns>The unique IDs of the messages that were not updated.</returns>
+		/// <param name="uids">The UIDs of the messages.</param>
+		/// <param name="modseq">The mod-sequence value.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="uids"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="uids"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>The <see cref="IMailFolder"/> does not support annotations.</para>
+		/// <para>-or-</para>
+		/// <para>The <see cref="IMailFolder"/> does not support mod-sequences.</para>
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract IList<UniqueId> Store (IList<UniqueId> uids, ulong modseq, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Asynchronously store the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously stores the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </remarks>
+		/// <returns>The unique IDs of the messages that were not updated.</returns>
+		/// <param name="uids">The UIDs of the messages.</param>
+		/// <param name="modseq">The mod-sequence value.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="uids"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="uids"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>The <see cref="IMailFolder"/> does not support annotations.</para>
+		/// <para>-or-</para>
+		/// <para>The <see cref="IMailFolder"/> does not support mod-sequences.</para>
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract Task<IList<UniqueId>> StoreAsync (IList<UniqueId> uids, ulong modseq, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Store the annotations for the specified message.
+		/// </summary>
+		/// <remarks>
+		/// Stores the annotations for the specified message.
+		/// </remarks>
+		/// <param name="index">The index of the message.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="annotations"/> is <c>null</c>.
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="index"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public virtual void Store (int index, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken))
+		{
+			Store (new[] { index }, annotations, cancellationToken);
+		}
+
+		/// <summary>
+		/// Asynchronously store the annotations for the specified message.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously stores the annotations for the specified message.
+		/// </remarks>
+		/// <returns>An asynchronous task context.</returns>
+		/// <param name="index">The indexes of the message.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <paramref name="annotations"/> is <c>null</c>.
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// <paramref name="index"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public virtual Task StoreAsync (int index, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken))
+		{
+			return StoreAsync (new [] { index }, annotations, cancellationToken);
+		}
+
+		/// <summary>
+		/// Store the annotations for the specified messages.
+		/// </summary>
+		/// <remarks>
+		/// Stores the annotations for the specified messages.
+		/// </remarks>
+		/// <param name="indexes">The indexes of the messages.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="indexes"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="indexes"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract void Store (IList<int> indexes, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Asynchronously store the annotations for the specified messages.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously stores the annotations for the specified messages.
+		/// </remarks>
+		/// <returns>An asynchronous task context.</returns>
+		/// <param name="indexes">The indexes of the messages.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="indexes"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="indexes"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// The <see cref="IMailFolder"/> does not support annotations.
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract Task StoreAsync (IList<int> indexes, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Store the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </summary>
+		/// <remarks>
+		/// Stores the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </remarks>
+		/// <returns>The indexes of the messages that were not updated.</returns>
+		/// <param name="indexes">The indexes of the messages.</param>
+		/// <param name="modseq">The mod-sequence value.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="indexes"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="indexes"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>The <see cref="IMailFolder"/> does not support annotations.</para>
+		/// <para>-or-</para>
+		/// <para>The <see cref="IMailFolder"/> does not support mod-sequences.</para>
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract IList<int> Store (IList<int> indexes, ulong modseq, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
+		/// Asynchronously store the annotations for the specified messages only if their mod-sequence value is less than the specified value.
+		/// </summary>
+		/// <remarks>
+		/// Asynchronously stores the annotations for the specified messages only if their mod-sequence value is less than the specified value.s
+		/// </remarks>
+		/// <returns>The indexes of the messages that were not updated.</returns>
+		/// <param name="indexes">The indexes of the messages.</param>
+		/// <param name="modseq">The mod-sequence value.</param>
+		/// <param name="annotations">The annotations to store.</param>
+		/// <param name="cancellationToken">The cancellation token.</param>
+		/// <exception cref="System.ArgumentNullException">
+		/// <para><paramref name="indexes"/> is <c>null</c>.</para>
+		/// <para>-or-</para>
+		/// <para><paramref name="annotations"/> is <c>null</c>.</para>
+		/// </exception>
+		/// <exception cref="System.ArgumentException">
+		/// One or more of the <paramref name="indexes"/> is invalid.
+		/// </exception>
+		/// <exception cref="System.ObjectDisposedException">
+		/// The <see cref="IMailStore"/> has been disposed.
+		/// </exception>
+		/// <exception cref="ServiceNotConnectedException">
+		/// The <see cref="IMailStore"/> is not connected.
+		/// </exception>
+		/// <exception cref="ServiceNotAuthenticatedException">
+		/// The <see cref="IMailStore"/> is not authenticated.
+		/// </exception>
+		/// <exception cref="FolderNotOpenException">
+		/// The <see cref="IMailFolder"/> is not currently open in read-write mode.
+		/// </exception>
+		/// <exception cref="System.InvalidOperationException">
+		/// Cannot store annotations without any properties defined.
+		/// </exception>
+		/// <exception cref="System.NotSupportedException">
+		/// <para>The <see cref="IMailFolder"/> does not support annotations.</para>
+		/// <para>-or-</para>
+		/// <para>The <see cref="IMailFolder"/> does not support mod-sequences.</para>
+		/// </exception>
+		/// <exception cref="System.OperationCanceledException">
+		/// The operation was canceled via the cancellation token.
+		/// </exception>
+		/// <exception cref="System.IO.IOException">
+		/// An I/O error occurred.
+		/// </exception>
+		/// <exception cref="ProtocolException">
+		/// The server's response contained unexpected tokens.
+		/// </exception>
+		/// <exception cref="CommandException">
+		/// The command failed.
+		/// </exception>
+		public abstract Task<IList<int>> StoreAsync (IList<int> indexes, ulong modseq, IList<Annotation> annotations, CancellationToken cancellationToken = default (CancellationToken));
+
+		/// <summary>
 		/// Search the folder for messages matching the specified query.
 		/// </summary>
 		/// <remarks>
@@ -14224,10 +15956,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnOpened ()
 		{
-			var handler = Opened;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			Opened?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14246,10 +15975,15 @@ namespace MailKit {
 		/// </remarks>
 		internal protected virtual void OnClosed ()
 		{
-			var handler = Closed;
+			PermanentFlags = MessageFlags.None;
+			AcceptedFlags = MessageFlags.None;
+			Access = FolderAccess.None;
 
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			AnnotationAccess = AnnotationAccess.None;
+			AnnotationScopes = AnnotationScope.None;
+			MaxAnnotationSize = 0;
+
+			Closed?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14268,10 +16002,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnDeleted ()
 		{
-			var handler = Deleted;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			Deleted?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14292,10 +16023,7 @@ namespace MailKit {
 		/// <param name="newName">The new name of the folder.</param>
 		protected virtual void OnRenamed (string oldName, string newName)
 		{
-			var handler = Renamed;
-
-			if (handler != null)
-				handler (this, new FolderRenamedEventArgs (oldName, newName));
+			Renamed?.Invoke (this, new FolderRenamedEventArgs (oldName, newName));
 		}
 
 		/// <summary>
@@ -14336,10 +16064,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnSubscribed ()
 		{
-			var handler = Subscribed;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			Subscribed?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14358,10 +16083,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnUnsubscribed ()
 		{
-			var handler = Unsubscribed;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			Unsubscribed?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14384,10 +16106,7 @@ namespace MailKit {
 		/// <param name="args">The message expunged event args.</param>
 		protected virtual void OnMessageExpunged (MessageEventArgs args)
 		{
-			var handler = MessageExpunged;
-
-			if (handler != null)
-				handler (this, args);
+			MessageExpunged?.Invoke (this, args);
 		}
 
 		/// <summary>
@@ -14407,10 +16126,7 @@ namespace MailKit {
 		/// <param name="args">The messages vanished event args.</param>
 		protected virtual void OnMessagesVanished (MessagesVanishedEventArgs args)
 		{
-			var handler = MessagesVanished;
-
-			if (handler != null)
-				handler (this, args);
+			MessagesVanished?.Invoke (this, args);
 		}
 
 		/// <summary>
@@ -14433,10 +16149,7 @@ namespace MailKit {
 		/// <param name="args">The message flags changed event args.</param>
 		protected virtual void OnMessageFlagsChanged (MessageFlagsChangedEventArgs args)
 		{
-			var handler = MessageFlagsChanged;
-
-			if (handler != null)
-				handler (this, args);
+			MessageFlagsChanged?.Invoke (this, args);
 		}
 
 		/// <summary>
@@ -14456,10 +16169,27 @@ namespace MailKit {
 		/// <param name="args">The message labels changed event args.</param>
 		protected virtual void OnMessageLabelsChanged (MessageLabelsChangedEventArgs args)
 		{
-			var handler = MessageLabelsChanged;
+			MessageLabelsChanged?.Invoke (this, args);
+		}
 
-			if (handler != null)
-				handler (this, args);
+		/// <summary>
+		/// Occurs when annotations changed on a message.
+		/// </summary>
+		/// <remarks>
+		/// The <see cref="AnnotationsChanged"/> event is emitted when the annotations for a message are changed.
+		/// </remarks>
+		public event EventHandler<AnnotationsChangedEventArgs> AnnotationsChanged;
+
+		/// <summary>
+		/// Raise the message annotations changed event.
+		/// </summary>
+		/// <remarks>
+		/// Raises the message annotations changed event.
+		/// </remarks>
+		/// <param name="args">The message annotations changed event args.</param>
+		protected virtual void OnAnnotationsChanged (AnnotationsChangedEventArgs args)
+		{
+			AnnotationsChanged?.Invoke (this, args);
 		}
 
 		/// <summary>
@@ -14509,10 +16239,7 @@ namespace MailKit {
 		/// <param name="message">The message summary.</param>
 		protected virtual void OnMessageSummaryFetched (IMessageSummary message)
 		{
-			var handler = MessageSummaryFetched;
-
-			if (handler != null)
-				handler (this, new MessageSummaryFetchedEventArgs (message));
+			MessageSummaryFetched?.Invoke (this, new MessageSummaryFetchedEventArgs (message));
 		}
 
 		/// <summary>
@@ -14532,10 +16259,7 @@ namespace MailKit {
 		/// <param name="metadata">The metadata that changed.</param>
 		internal protected virtual void OnMetadataChanged (Metadata metadata)
 		{
-			var handler = MetadataChanged;
-
-			if (handler != null)
-				handler (this, new MetadataChangedEventArgs (metadata));
+			MetadataChanged?.Invoke (this, new MetadataChangedEventArgs (metadata));
 		}
 
 		/// <summary>
@@ -14555,10 +16279,7 @@ namespace MailKit {
 		/// <param name="args">The mod-sequence changed event args.</param>
 		protected virtual void OnModSeqChanged (ModSeqChangedEventArgs args)
 		{
-			var handler = ModSeqChanged;
-
-			if (handler != null)
-				handler (this, args);
+			ModSeqChanged?.Invoke (this, args);
 		}
 
 		/// <summary>
@@ -14577,10 +16298,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnHighestModSeqChanged ()
 		{
-			var handler = HighestModSeqChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			HighestModSeqChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14599,10 +16317,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnUidNextChanged ()
 		{
-			var handler = UidNextChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			UidNextChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14621,10 +16336,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnUidValidityChanged ()
 		{
-			var handler = UidValidityChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			UidValidityChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14643,10 +16355,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnIdChanged ()
 		{
-			var handler = IdChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			IdChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14665,10 +16374,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnSizeChanged ()
 		{
-			var handler = SizeChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			SizeChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14690,10 +16396,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnCountChanged ()
 		{
-			var handler = CountChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			CountChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14712,10 +16415,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnRecentChanged ()
 		{
-			var handler = RecentChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			RecentChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		/// <summary>
@@ -14734,10 +16434,7 @@ namespace MailKit {
 		/// </remarks>
 		protected virtual void OnUnreadChanged ()
 		{
-			var handler = UnreadChanged;
-
-			if (handler != null)
-				handler (this, EventArgs.Empty);
+			UnreadChanged?.Invoke (this, EventArgs.Empty);
 		}
 
 		#region IEnumerable<MimeMessage> implementation

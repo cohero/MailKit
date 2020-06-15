@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,10 +44,10 @@ namespace MailKit.Net.Proxy
 		static readonly byte[] InvalidIPAddress = { 0, 0, 0, 1 };
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks4Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks4Client"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks4Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks4Client"/> class.
 		/// </remarks>
 		/// <param name="host">The host name of the proxy server.</param>
 		/// <param name="port">The proxy server port.</param>
@@ -67,10 +67,10 @@ namespace MailKit.Net.Proxy
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks4Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks4Client"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks4Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks4Client"/> class.
 		/// </remarks>
 		/// <param name="host">The host name of the proxy server.</param>
 		/// <param name="port">The proxy server port.</param>
@@ -125,14 +125,14 @@ namespace MailKit.Net.Proxy
 			}
 		}
 
-		async Task<IPAddress> Resolve (string host, bool doAsync, CancellationToken cancellationToken)
+		async Task<IPAddress> ResolveAsync (string host, bool doAsync, CancellationToken cancellationToken)
 		{
 			IPAddress[] ipAddresses;
 
 			if (doAsync) {
 				ipAddresses = await Dns.GetHostAddressesAsync (host).ConfigureAwait (false);
 			} else {
-#if NETSTANDARD
+#if NETSTANDARD1_3 || NETSTANDARD1_6
 				ipAddresses = Dns.GetHostAddressesAsync (host).GetAwaiter ().GetResult ();
 #else
 				ipAddresses = Dns.GetHostAddresses (host);
@@ -159,7 +159,7 @@ namespace MailKit.Net.Proxy
 					domain = Encoding.UTF8.GetBytes (host);
 					addr = InvalidIPAddress;
 				} else {
-					ip = await Resolve (host, doAsync, cancellationToken);
+					ip = await ResolveAsync (host, doAsync, cancellationToken).ConfigureAwait (false);
 					addr = ip.GetAddressBytes ();
 				}
 			} else {
@@ -199,8 +199,7 @@ namespace MailKit.Net.Proxy
 					buffer[n++] = 0x00;
 				}
 
-				SocketUtils.Poll (socket, SelectMode.SelectWrite, cancellationToken);
-				socket.Send (buffer, 0, n, SocketFlags.None);
+				await SendAsync (socket, buffer, 0, n, doAsync, cancellationToken).ConfigureAwait (false);
 
 				// +-----+-----+----------+----------+
 				// | VER | REP | BND.PORT | BND.ADDR |
@@ -210,8 +209,7 @@ namespace MailKit.Net.Proxy
 				n = 0;
 
 				do {
-					SocketUtils.Poll (socket, SelectMode.SelectRead, cancellationToken);
-					if ((nread = socket.Receive (buffer, 0 + n, 8 - n, SocketFlags.None)) > 0)
+					if ((nread = await ReceiveAsync (socket, buffer, 0 + n, 8 - n, doAsync, cancellationToken).ConfigureAwait (false)) > 0)
 						n += nread;
 				} while (n < 8);
 
@@ -222,7 +220,7 @@ namespace MailKit.Net.Proxy
 
 				return socket;
 			} catch {
-#if NETSTANDARD_2_0 || NET_4_5 || __MOBILE__
+#if !NETSTANDARD1_3 && !NETSTANDARD1_6
 				if (socket.Connected)
 					socket.Disconnect (false);
 #endif

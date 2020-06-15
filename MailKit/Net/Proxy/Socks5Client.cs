@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -44,10 +44,10 @@ namespace MailKit.Net.Proxy
 	public class Socks5Client : SocksClient
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks5Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks5Client"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks5Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks5Client"/> class.
 		/// </remarks>
 		/// <param name="host">The host name of the proxy server.</param>
 		/// <param name="port">The proxy server port.</param>
@@ -67,10 +67,10 @@ namespace MailKit.Net.Proxy
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks5Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks5Client"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.Socks5Client"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.Socks5Client"/> class.
 		/// </remarks>
 		/// <param name="host">The host name of the proxy server.</param>
 		/// <param name="port">The proxy server port.</param>
@@ -94,6 +94,7 @@ namespace MailKit.Net.Proxy
 
 		internal enum Socks5AddressType : byte
 		{
+			None   = 0x00,
 			IPv4   = 0x01,
 			Domain = 0x03,
 			IPv6   = 0x04
@@ -160,7 +161,7 @@ namespace MailKit.Net.Proxy
 				throw new ProxyProtocolException (string.Format ("Proxy server responded with unknown SOCKS version: {0}", (int) version));
 		}
 
-		Socks5AuthMethod NegotiateAuthMethod (Socket socket, CancellationToken cancellationToken, params Socks5AuthMethod[] methods)
+		async Task<Socks5AuthMethod> NegotiateAuthMethodAsync (Socket socket, bool doAsync, CancellationToken cancellationToken, params Socks5AuthMethod[] methods)
 		{
 			// +-----+----------+----------+
 			// | VER | NMETHODS | METHODS  |
@@ -175,9 +176,7 @@ namespace MailKit.Net.Proxy
 			for (int i = 0; i < methods.Length; i++)
 				buffer[n++] = (byte) methods[i];
 
-			SocketUtils.Poll (socket, SelectMode.SelectWrite, cancellationToken);
-
-			socket.Send (buffer, 0, n, SocketFlags.None);
+			await SendAsync (socket, buffer, 0, n, doAsync, cancellationToken).ConfigureAwait (false);
 
 			// +-----+--------+
 			// | VER | METHOD |
@@ -186,8 +185,7 @@ namespace MailKit.Net.Proxy
 			// +-----+--------+
 			n = 0;
 			do {
-				SocketUtils.Poll (socket, SelectMode.SelectRead, cancellationToken);
-				if ((nread = socket.Receive (buffer, 0 + n, 2 - n, SocketFlags.None)) > 0)
+				if ((nread = await ReceiveAsync (socket, buffer, 0 + n, 2 - n, doAsync, cancellationToken).ConfigureAwait (false)) > 0)
 					n += nread;
 			} while (n < 2);
 
@@ -196,7 +194,7 @@ namespace MailKit.Net.Proxy
 			return (Socks5AuthMethod) buffer[1];
 		}
 
-		void Authenticate (Socket socket, CancellationToken cancellationToken)
+		async Task AuthenticateAsync (Socket socket, bool doAsync, CancellationToken cancellationToken)
 		{
 			var user = Encoding.UTF8.GetBytes (ProxyCredentials.UserName);
 
@@ -205,13 +203,15 @@ namespace MailKit.Net.Proxy
 
 			var passwd = Encoding.UTF8.GetBytes (ProxyCredentials.Password);
 
-			if (passwd.Length > 255)
+			if (passwd.Length > 255) {
+				Array.Clear (passwd, 0, passwd.Length);
 				throw new AuthenticationException ("Password too long.");
+			}
 
 			var buffer = new byte[user.Length + passwd.Length + 3];
 			int nread, n = 0;
 
-			buffer[n++] = (byte) SocksVersion;
+			buffer[n++] = 1;
 			buffer[n++] = (byte) user.Length;
 			Buffer.BlockCopy (user, 0, buffer, n, user.Length);
 			n += user.Length;
@@ -219,18 +219,15 @@ namespace MailKit.Net.Proxy
 			Buffer.BlockCopy (passwd, 0, buffer, n, passwd.Length);
 			n += passwd.Length;
 
-			SocketUtils.Poll (socket, SelectMode.SelectWrite, cancellationToken);
+			Array.Clear (passwd, 0, passwd.Length);
 
-			socket.Send (buffer, 0, n, SocketFlags.None);
+			await SendAsync (socket, buffer, 0, n, doAsync, cancellationToken).ConfigureAwait (false);
 
 			n = 0;
 			do {
-				SocketUtils.Poll (socket, SelectMode.SelectRead, cancellationToken);
-				if ((nread = socket.Receive (buffer, 0 + n, 2 - n, SocketFlags.None)) > 0)
+				if ((nread = await ReceiveAsync (socket, buffer, 0 + n, 2 - n, doAsync, cancellationToken).ConfigureAwait (false)) > 0)
 					n += nread;
 			} while (n < 2);
-
-			VerifySocksVersion (buffer[0]);
 
 			if (buffer[1] != (byte) Socks5Reply.Success)
 				throw new AuthenticationException ("Failed to authenticate with SOCKS5 proxy server.");
@@ -258,13 +255,13 @@ namespace MailKit.Net.Proxy
 				Socks5AuthMethod method;
 
 				if (ProxyCredentials != null)
-					method = NegotiateAuthMethod (socket, cancellationToken, Socks5AuthMethod.UserPassword, Socks5AuthMethod.Anonymous);
+					method = await NegotiateAuthMethodAsync (socket, doAsync, cancellationToken, Socks5AuthMethod.UserPassword, Socks5AuthMethod.Anonymous).ConfigureAwait (false);
 				else
-					method = NegotiateAuthMethod (socket, cancellationToken, Socks5AuthMethod.Anonymous);
+					method = await NegotiateAuthMethodAsync (socket, doAsync, cancellationToken, Socks5AuthMethod.Anonymous).ConfigureAwait (false);
 
 				switch (method) {
 				case Socks5AuthMethod.UserPassword:
-					Authenticate (socket, cancellationToken);
+					await AuthenticateAsync (socket, doAsync, cancellationToken).ConfigureAwait (false);
 					break;
 				case Socks5AuthMethod.Anonymous:
 					break;
@@ -304,8 +301,7 @@ namespace MailKit.Net.Proxy
 				buffer[n++] = (byte)(port >> 8);
 				buffer[n++] = (byte) port;
 
-				SocketUtils.Poll (socket, SelectMode.SelectWrite, cancellationToken);
-				socket.Send (buffer, 0, n, SocketFlags.None);
+				await SendAsync (socket, buffer, 0, n, doAsync, cancellationToken).ConfigureAwait (false);
 
 				// +-----+-----+-------+------+----------+----------+
 				// | VER | REP |  RSV  | ATYP | BND.ADDR | BND.PORT |
@@ -319,8 +315,7 @@ namespace MailKit.Net.Proxy
 				n = 0;
 
 				do {
-					SocketUtils.Poll (socket, SelectMode.SelectRead, cancellationToken);
-					if ((nread = socket.Receive (buffer, 0 + n, need - n, SocketFlags.None)) > 0)
+					if ((nread = await ReceiveAsync (socket, buffer, 0 + n, need - n, doAsync, cancellationToken).ConfigureAwait (false)) > 0)
 						n += nread;
 				} while (n < need);
 
@@ -339,8 +334,7 @@ namespace MailKit.Net.Proxy
 				}
 
 				do {
-					SocketUtils.Poll (socket, SelectMode.SelectRead, cancellationToken);
-					if ((nread = socket.Receive (buffer, 0 + n, need - n, SocketFlags.None)) > 0)
+					if ((nread = await ReceiveAsync (socket, buffer, 0 + n, need - n, doAsync, cancellationToken).ConfigureAwait (false)) > 0)
 						n += nread;
 				} while (n < need);
 
@@ -348,7 +342,7 @@ namespace MailKit.Net.Proxy
 
 				return socket;
 			} catch {
-#if NETSTANDARD_2_0 || NET_4_5 || __MOBILE__
+#if !NETSTANDARD1_3 && !NETSTANDARD1_6
 				if (socket.Connected)
 					socket.Disconnect (false);
 #endif

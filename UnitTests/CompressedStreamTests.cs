@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 using NUnit.Framework;
 
@@ -49,18 +50,18 @@ namespace UnitTests {
 				Assert.Throws<ArgumentOutOfRangeException> (() => stream.Read (buffer, 0, -1));
 				Assert.AreEqual (0, stream.Read (buffer, 0, 0));
 
-				Assert.Throws<ArgumentNullException> (async () => await stream.ReadAsync (null, 0, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, -1, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, 0, -1));
+				Assert.ThrowsAsync<ArgumentNullException> (async () => await stream.ReadAsync (null, 0, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, -1, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, 0, -1));
 
 				Assert.Throws<ArgumentNullException> (() => stream.Write (null, 0, buffer.Length));
 				Assert.Throws<ArgumentOutOfRangeException> (() => stream.Write (buffer, -1, buffer.Length));
 				Assert.Throws<ArgumentOutOfRangeException> (() => stream.Write (buffer, 0, -1));
 				stream.Write (buffer, 0, 0);
 
-				Assert.Throws<ArgumentNullException> (async () => await stream.WriteAsync (null, 0, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.WriteAsync (buffer, -1, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.WriteAsync (buffer, 0, -1));
+				Assert.ThrowsAsync<ArgumentNullException> (async () => await stream.WriteAsync (null, 0, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.WriteAsync (buffer, -1, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.WriteAsync (buffer, 0, -1));
 			}
 		}
 
@@ -100,9 +101,9 @@ namespace UnitTests {
 				stream.Write (output, 0, output.Length);
 				stream.Flush ();
 
-				Assert.AreEqual (compressedLength, stream.BaseStream.Position, "Compressed output length");
+				Assert.AreEqual (compressedLength, stream.InnerStream.Position, "Compressed output length");
 
-				stream.BaseStream.Position = 0;
+				stream.InnerStream.Position = 0;
 
 				n = stream.Read (buffer, 0, buffer.Length);
 				Assert.AreEqual (output.Length, n, "Decompressed input length");
@@ -113,7 +114,7 @@ namespace UnitTests {
 		}
 
 		[Test]
-		public async void TestReadWriteAsync ()
+		public async Task TestReadWriteAsync ()
 		{
 			using (var stream = new CompressedStream (new DummyNetworkStream ())) {
 				string command = "A00000001 APPEND INBOX (\\Seen \\Draft) {4096+}\r\nFrom: Sample Sender <sender@sample.com>\r\nTo: Sample Recipient <recipient@sample.com>\r\nSubject: This is a test message...\r\nDate: Mon, 22 Oct 2018 18:22:56 EDT\r\nMessage-Id: <msgid@localhost.com>\r\n\r\nTesting... 1. 2. 3.\r\nTesting.\r\nOver and out.\r\n";
@@ -125,9 +126,9 @@ namespace UnitTests {
 				await stream.WriteAsync (output, 0, output.Length);
 				await stream.FlushAsync ();
 
-				Assert.AreEqual (compressedLength, stream.BaseStream.Position, "Compressed output length");
+				Assert.AreEqual (compressedLength, stream.InnerStream.Position, "Compressed output length");
 
-				stream.BaseStream.Position = 0;
+				stream.InnerStream.Position = 0;
 
 				n = await stream.ReadAsync (buffer, 0, buffer.Length);
 				Assert.AreEqual (output.Length, n, "Decompressed input length");

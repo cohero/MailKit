@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -42,10 +42,10 @@ namespace MailKit.Net.Proxy
 	public abstract class ProxyClient : IProxyClient
 	{
 		/// <summary>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.ProxyClient"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.ProxyClient"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.ProxyClient"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.ProxyClient"/> class.
 		/// </remarks>
 		/// <param name="host">The host name of the proxy server.</param>
 		/// <param name="port">The proxy server port.</param>
@@ -76,10 +76,10 @@ namespace MailKit.Net.Proxy
 		}
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.ProxyClient"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.ProxyClient"/> class.
 		/// </summary>
 		/// <remarks>
-		/// Initializes a new instance of the <see cref="T:MailKit.Net.ProxyClient"/> class.
+		/// Initializes a new instance of the <see cref="T:MailKit.Net.Proxy.ProxyClient"/> class.
 		/// </remarks>
 		/// <param name="host">The host name of the proxy server.</param>
 		/// <param name="port">The proxy server port.</param>
@@ -167,6 +167,78 @@ namespace MailKit.Net.Proxy
 
 			if (timeout < -1)
 				throw new ArgumentOutOfRangeException (nameof (timeout));
+		}
+
+		static void AsyncOperationCompleted (object sender, SocketAsyncEventArgs args)
+		{
+			var tcs = (TaskCompletionSource<bool>) args.UserToken;
+
+			if (args.SocketError == SocketError.Success) {
+				tcs.TrySetResult (true);
+				return;
+			}
+
+			tcs.TrySetException (new SocketException ((int) args.SocketError));
+		}
+
+		internal static async Task SendAsync (Socket socket, byte[] buffer, int offset, int length, bool doAsync, CancellationToken cancellationToken)
+		{
+			if (doAsync || cancellationToken.CanBeCanceled) {
+				var tcs = new TaskCompletionSource<bool> ();
+
+				using (var registration = cancellationToken.Register (() => tcs.TrySetCanceled (), false)) {
+					using (var args = new SocketAsyncEventArgs ()) {
+						args.Completed += AsyncOperationCompleted;
+						args.SetBuffer (buffer, offset, length);
+						args.AcceptSocket = socket;
+						args.UserToken = tcs;
+
+						if (!socket.SendAsync (args))
+							AsyncOperationCompleted (null, args);
+
+						if (doAsync)
+							await tcs.Task.ConfigureAwait (false);
+						else
+							tcs.Task.GetAwaiter ().GetResult ();
+
+						return;
+					}
+				}
+			}
+
+			SocketUtils.Poll (socket, SelectMode.SelectWrite, cancellationToken);
+
+			socket.Send (buffer, offset, length, SocketFlags.None);
+		}
+
+		internal static async Task<int> ReceiveAsync (Socket socket, byte[] buffer, int offset, int length, bool doAsync, CancellationToken cancellationToken)
+		{
+			if (doAsync || cancellationToken.CanBeCanceled) {
+				var tcs = new TaskCompletionSource<bool> ();
+
+				using (var registration = cancellationToken.Register (() => tcs.TrySetCanceled (), false)) {
+					using (var args = new SocketAsyncEventArgs ()) {
+						args.Completed += AsyncOperationCompleted;
+						args.SetBuffer (buffer, offset, length);
+						args.AcceptSocket = socket;
+						args.UserToken = tcs;
+
+						if (!socket.ReceiveAsync (args))
+							AsyncOperationCompleted (null, args);
+
+						if (doAsync)
+							await tcs.Task.ConfigureAwait (false);
+						else
+							tcs.Task.GetAwaiter ().GetResult ();
+
+						return args.BytesTransferred;
+					}
+				}
+			}
+
+			SocketUtils.Poll (socket, SelectMode.SelectRead, cancellationToken);
+
+			return socket.Receive (buffer, offset, length, SocketFlags.None);
 		}
 
 		/// <summary>

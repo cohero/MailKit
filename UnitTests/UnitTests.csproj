@@ -1,62 +1,46 @@
-﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{637EC535-3921-4A7A-8CB4-00A5AB18FAA2}</ProjectGuid>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
-    <OutputType>Library</OutputType>
-    <RootNamespace>UnitTests</RootNamespace>
+    <TargetFramework>net48</TargetFramework>
     <AssemblyName>UnitTests</AssemblyName>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-    <NoWarn>219</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <ConsolePause>false</ConsolePause>
-    <NoWarn>219</NoWarn>
-  </PropertyGroup>
-  <PropertyGroup>
+    <DebugType>Full</DebugType>
     <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
+    <DefineConstants Condition=" '$(MonoRuntime)' == 'true' ">$(DefineConstants);MONO</DefineConstants>
     <AssemblyOriginatorKeyFile>..\MailKit\mailkit.snk</AssemblyOriginatorKeyFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="BouncyCastle.Crypto, Version=1.8.2.0, Culture=neutral, PublicKeyToken=0e99375e54769942">
-      <HintPath>..\packages\BouncyCastle.1.8.2\lib\BouncyCastle.Crypto.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
-    </Reference>
+    <PackageReference Include="coveralls.net" Version="0.7.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="nunit" Version="3.12.0" />
+    <PackageReference Include="NUnit.ConsoleRunner" Version="3.11.1" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.16.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
+    <PackageReference Include="OpenCover" Version="4.6.519" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.113.1" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\submodules\MimeKit\MimeKit\MimeKit.Net45.csproj">
-      <Project>{D5F54A4F-D84B-430F-9271-F7861E285B3E}</Project>
-      <Name>MimeKit.Net45</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\MailKit\MailKit.Net45.csproj">
-      <Project>{7264D469-A390-4C10-9C87-DAA37EDD3C1D}</Project>
-      <Name>MailKit.Net45</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\submodules\MimeKit\Mono.Data.Sqlite\Mono.Data.Sqlite.csproj" />
+    <ProjectReference Include="..\submodules\MimeKit\MimeKit\MimeKit.csproj" />
+    <ProjectReference Include="..\MailKit\MailKit.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Net\Imap\ImapClientTests.cs" />
     <Compile Include="Net\Imap\ImapCommandExceptionTests.cs" />
     <Compile Include="Net\Imap\ImapEncodingTests.cs" />
     <Compile Include="Net\Imap\ImapEngineTests.cs" />
+    <Compile Include="Net\Imap\ImapFolderAnnotationsTests.cs" />
     <Compile Include="Net\Imap\ImapFolderFetchTests.cs" />
     <Compile Include="Net\Imap\ImapFolderFlagsTests.cs" />
     <Compile Include="Net\Imap\ImapFolderTests.cs" />
@@ -70,6 +54,7 @@
     <Compile Include="Net\Pop3\Pop3CommandExceptionTests.cs" />
     <Compile Include="Net\Pop3\Pop3ReplayStream.cs" />
     <Compile Include="Net\Pop3\Pop3StreamTests.cs" />
+    <Compile Include="Net\Proxy\HttpProxyClientTests.cs" />
     <Compile Include="Net\Proxy\ProxyListener.cs" />
     <Compile Include="Net\Proxy\ProxyProtocolExceptionTests.cs" />
     <Compile Include="Net\Proxy\Socks4aClientTests.cs" />
@@ -85,6 +70,7 @@
     <Compile Include="Net\Smtp\SmtpReplayStream.cs" />
     <Compile Include="Net\Smtp\SmtpStreamTests.cs" />
     <Compile Include="Net\DummyNetworkStream.cs" />
+    <Compile Include="Net\NetworkStreamTests.cs" />
     <Compile Include="Search\SearchQueryTests.cs" />
     <Compile Include="Security\Ntlm\MD4Tests.cs" />
     <Compile Include="Security\AuthenticationExceptionTests.cs" />
@@ -100,6 +86,9 @@
     <Compile Include="Security\SaslMechanismTests.cs" />
     <Compile Include="Security\SslHandshakeExceptionTests.cs" />
     <Compile Include="AccessControlListTests.cs" />
+    <Compile Include="AnnotationAttributeTests.cs" />
+    <Compile Include="AnnotationEntryTests.cs" />
+    <Compile Include="AnnotationTests.cs" />
     <Compile Include="ArgumentExceptionTests.cs" />
     <Compile Include="BodyPartTests.cs" />
     <Compile Include="CompressedStreamTests.cs" />
@@ -128,6 +117,7 @@
     <EmbeddedResource Include="Net\Imap\Resources\acl\myrights.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\capability.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\capability-greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\common\fetch-annotations.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\getquota.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\getquota-no-root.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\id.txt" />
@@ -187,8 +177,22 @@
     <EmbeddedResource Include="Net\Imap\Resources\common\preauth-capability-greeting.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\preauth-greeting.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\select-inbox.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\common\select-inbox-annotate.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\common\select-inbox-annotate-no-modseq.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\common\select-inbox-annotate-none.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\common\select-inbox-annotate-readonly.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\select-inbox-no-modseq.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\common\setquota.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\courier\capability.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\courier\greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\cyrus\authenticate.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\cyrus\capability.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\cyrus\greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\domino\capability.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\domino\fetch-extra-parens.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\domino\greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\domino\list-inbox.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\domino\namespace.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\append.1.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\append.2.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\append.3.txt" />
@@ -198,7 +202,9 @@
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\append.7.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\append.8.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\authenticate.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\dovecot\authenticate+annotate.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\authenticate+gmail-capabilities.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\dovecot\authenticate+replace.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\copy.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\enable-qresync.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\examine-folder.txt" />
@@ -270,6 +276,9 @@
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\thread-orderedsubject.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\thread-references.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\dovecot\uid-expunge.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\exchange\capability-postauth.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\exchange\greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\exchange\capability-preauth.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\add-flags.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\add-labels.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\append.1.txt" />
@@ -355,12 +364,11 @@
     <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch.43.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch.50.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-objectid.txt" />
-    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext7.txt" />
-    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext8.txt" />
-    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext9.txt" />
-    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext10.txt" />
-    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext11.txt" />
-    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext12.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext-bodystructure.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext-peek-html-only.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext-peek-text-alternative.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\gmail\fetch-previewtext-peek-text-only.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\gmail\expunge-during-fetch.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\get-indexes.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\go-ahead.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\greeting.txt" />
@@ -413,6 +421,9 @@
     <EmbeddedResource Include="Net\Imap\Resources\gmail\uid-move.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\utf8accept.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\gmail\xlist.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\lowercase\capability.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\lowercase\greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\lowercase\list.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\metadata\authenticate.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\metadata\capability.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\metadata\getmetadata.txt" />
@@ -427,6 +438,8 @@
     <EmbeddedResource Include="Net\Imap\Resources\metadata\setmetadata-maxsize.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\metadata\setmetadata-noprivate.txt" />
     <EmbeddedResource Include="Net\Imap\Resources\metadata\setmetadata-toomany.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\uw\greeting.txt" />
+    <EmbeddedResource Include="Net\Imap\Resources\uw\preauth-greeting.txt" />
     <EmbeddedResource Include="Net\Pop3\Resources\comcast\capa1.txt" />
     <EmbeddedResource Include="Net\Pop3\Resources\comcast\capa2.txt" />
     <EmbeddedResource Include="Net\Pop3\Resources\comcast\err.txt" />
@@ -503,6 +516,7 @@
     <EmbeddedResource Include="Net\Smtp\Resources\comcast-ehlo+binarymime.txt" />
     <EmbeddedResource Include="Net\Smtp\Resources\comcast-ehlo+dsn.txt" />
     <EmbeddedResource Include="Net\Smtp\Resources\comcast-ehlo+pipelining.txt" />
+    <EmbeddedResource Include="Net\Smtp\Resources\comcast-ehlo+smtputf8.txt" />
     <EmbeddedResource Include="Net\Smtp\Resources\comcast-greeting.txt" />
     <EmbeddedResource Include="Net\Smtp\Resources\comcast-mail-from.txt" />
     <EmbeddedResource Include="Net\Smtp\Resources\comcast-noop.txt" />
@@ -516,21 +530,5 @@
     <EmbeddedResource Include="Net\Smtp\Resources\rfc0821-expn.txt" />
     <EmbeddedResource Include="Net\Smtp\Resources\rfc0821-vrfy.txt" />
   </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ProjectExtensions>
-    <MonoDevelop>
-      <Properties>
-        <Policies>
-          <DotNetNamingPolicy ResourceNamePolicy="FileFormatDefault" DirectoryNamespaceAssociation="PrefixedHierarchical" />
-        </Policies>
-      </Properties>
-    </MonoDevelop>
-  </ProjectExtensions>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
+
 </Project>

@@ -2,10 +2,10 @@
 
 [![Join the chat at https://gitter.im/jstedfast/MailKit](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/jstedfast/MailKit?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-|  Package  | Download |
-|:----------|:--------:|
-|**MimeKit**|[![NuGet Badge MimeKit](https://buildstats.info/nuget/MimeKit)](https://www.nuget.org/packages/MimeKit)|
-|**MailKit**|[![NuGet Badge MailKit](https://buildstats.info/nuget/MailKit)](https://www.nuget.org/packages/MailKit)|
+|  Package  |Latest Release|Latest Build|
+|:----------|:------------:|:----------:|
+|**MimeKit**|[![NuGet Badge MimeKit](https://buildstats.info/nuget/MimeKit)](https://www.nuget.org/packages/MimeKit)|[![MyGet Badge MimeKit](https://buildstats.info/myget/mimekit/MimeKit)](https://www.myget.org/feed/mimekit/package/nuget/MimeKit)|
+|**MailKit**|[![NuGet Badge MailKit](https://buildstats.info/nuget/MailKit)](https://www.nuget.org/packages/MailKit)|[![MyGet Badge MailKit](https://buildstats.info/myget/mimekit/MailKit)](https://www.myget.org/feed/mimekit/package/nuget/MailKit)|
 
 |  Platform   |Build Status|Code Coverage|Static Analysis|
 |:------------|:----------:|:-----------:|:-------------:|
@@ -41,6 +41,7 @@ motivate me to continue working on the project.
 * Proxy Support
   * [SOCKS4/4a](http://www.openssh.com/txt/socks4.protocol)
   * [SOCKS5](https://tools.ietf.org/html/rfc1928)
+  * [HTTP](https://tools.ietf.org/html/rfc2616)
 * SMTP Client
   * Supports all of the SASL mechanisms listed above.
   * Supports SSL-wrapped connections via the "smtps" protocol.
@@ -101,6 +102,7 @@ motivate me to continue working on the project.
     * [QRESYNC](https://tools.ietf.org/html/rfc5162)
     * [SORT](https://tools.ietf.org/html/rfc5256)
     * [THREAD](https://tools.ietf.org/html/rfc5256)
+    * [ANNOTATE](https://tools.ietf.org/html/rfc5257)
     * [LIST-EXTENDED](https://tools.ietf.org/html/rfc5258)
     * [ESORT](https://tools.ietf.org/html/rfc5267)
     * [METADATA / METADATA-SERVER](https://tools.ietf.org/html/rfc5464)
@@ -116,6 +118,7 @@ motivate me to continue working on the project.
     * [APPENDLIMIT](https://tools.ietf.org/html/rfc7889)
     * [STATUS=SIZE](https://tools.ietf.org/html/rfc8438)
     * [OBJECTID](https://tools.ietf.org/html/rfc8474)
+    * [REPLACE](https://tools.ietf.org/html/rfc8508)
     * [XLIST](https://developers.google.com/gmail/imap_extensions)
     * [X-GM-EXT1](https://developers.google.com/gmail/imap_extensions) (X-GM-MSGID, X-GM-THRID, X-GM-RAW and X-GM-LABELS)
   * All APIs are cancellable.
@@ -158,7 +161,7 @@ which should improve performance of sending messages (although might not be very
 
 ## License Information
 
-MailKit is Copyright (C) 2013-2018 Xamarin Inc. and is licensed under the MIT license:
+MailKit is Copyright (C) 2013-2020 .NET Foundation and Contributors and is licensed under the MIT license:
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal
@@ -221,15 +224,16 @@ directory and select **Git Sync...** in the menu. Once you do that, you'll need 
 
 In the top-level MailKit directory, there are a number of solution files; they are:
 
-* **MailKit.sln** - includes the projects for .NET 4.5, .NETStandard 1.3/1.6/2.0, Windows Universal 8.1,
-  Xamarin.Android, and Xamarin.iOS.
-* **MailKit.Mobile.sln** - includes only the Xamarin.iOS and Xamarin.Android projects.
-* **MailKit.Net45.sln** - includes only the .NET 4.5 project and the unit tests.
-
-If you don't have the Xamarin products, you'll probably want to open the MailKit.Net45.sln instead of MailKit.sln.
+* **MailKit.sln** - includes the projects for .NET 4.5/4.6/4.7/4.8, .NETStandard 1.3/1.6/2.0 as well as the unit tests.
 
 Once you've opened the appropriate MailKit solution file in [Visual Studio](https://www.visualstudio.com/downloads/),
 you can choose the **Debug** or **Release** build configuration and then build.
+
+Both Visual Studio 2017 and Visual Studio 2019 should be able to build MailKit without any issues, but older versions such as
+Visual Studio 2015 will require modifications to the projects in order to build correctly. It has been reported that adding
+NuGet package references to [Microsoft.Net.Compilers](https://www.nuget.org/packages/Microsoft.Net.Compilers/) >= 3.6.0
+and [System.ValueTuple](https://www.nuget.org/packages/System.ValueTuple/) >= 4.5.0 to the MimeKit and MailKit projects will
+allow them to build successfully.
 
 Note: The **Release** build will generate the xml API documentation, but the **Debug** build will not.
 
@@ -265,9 +269,6 @@ I just wanted to let you know that Monica and I were going to go play some paint
 			};
 
 			using (var client = new SmtpClient ()) {
-				// For demo-purposes, accept all SSL certificates (in case the server supports STARTTLS)
-				client.ServerCertificateValidationCallback = (s,c,h,e) => true;
-
 				client.Connect ("smtp.friends.com", 587, false);
 
 				// Note: only needed if the SMTP server requires authentication
@@ -298,9 +299,6 @@ namespace TestClient {
 		public static void Main (string[] args)
 		{
 			using (var client = new Pop3Client ()) {
-				// For demo-purposes, accept all SSL certificates (in case the server supports STARTTLS)
-				client.ServerCertificateValidationCallback = (s,c,h,e) => true;
-
 				client.Connect ("pop.friends.com", 110, false);
 
 				client.Authenticate ("joey", "password");
@@ -319,7 +317,7 @@ namespace TestClient {
 
 ## Using IMAP
 
-More important than POP3 support is the IMAP support. Here's a simple use-case of retreiving messages from an IMAP server:
+More important than POP3 support is the IMAP support. Here's a simple use-case of retrieving messages from an IMAP server:
 
 ```csharp
 using System;
@@ -335,9 +333,6 @@ namespace TestClient {
 		public static void Main (string[] args)
 		{
 			using (var client = new ImapClient ()) {
-				// For demo-purposes, accept all SSL certificates
-				client.ServerCertificateValidationCallback = (s,c,h,e) => true;
-
 				client.Connect ("imap.friends.com", 993, true);
 
 				client.Authenticate ("joey", "password");
@@ -361,17 +356,21 @@ namespace TestClient {
 }
 ```
 
-However, you probably want to do more complicated things with IMAP such as fetching summary information
-so that you can display a list of messages in a mail client without having to first download all of the
-messages from the server:
+### Fetching Information About the Messages in an IMAP Folder
+
+One of the advantages of IMAP over POP3 is that the IMAP protocol allows clients to retrieve information about
+the messages in a folder without having to first download all of them.
+
+Using the [Fetch](http://www.mimekit.net/docs/html/Overload_MailKit_Net_Imap_ImapFolder_Fetch.htm) method overloads,
+it's possible to obtain any subset of summary information for any range of messages in a given folder.
 
 ```csharp
-foreach (var summary in inbox.Fetch (0, -1, MessageSummaryItems.Full | MessageSummaryItems.UniqueId)) {
+foreach (var summary in inbox.Fetch (0, -1, MessageSummaryItems.Full)) {
 	Console.WriteLine ("[summary] {0:D2}: {1}", summary.Index, summary.Envelope.Subject);
 }
 ```
 
-The results of a Fetch command can also be used to download individual MIME parts rather
+The results of a Fetch method can also be used to download individual MIME parts rather
 than downloading the entire message. For example:
 
 ```csharp
@@ -399,6 +398,31 @@ foreach (var summary in inbox.Fetch (0, -1, MessageSummaryItems.UniqueId | Messa
 }
 ```
 
+### Setting Message Flags in IMAP
+
+In order to set or update the flags on a particular message, what is actually needed is the UID or index of the message and
+the folder that it belongs to.
+
+An obvious reason to want to update message flags is to mark a message as "read" (aka "seen") after a user has opened a
+message and read it.
+
+```csharp
+folder.AddFlags (uid, MessageFlags.Seen, true);
+```
+
+### Deleting Messages in IMAP
+
+Deleting messages in IMAP involves setting a `\Deleted` flag on a message and, optionally, expunging it from the folder.
+
+The way to mark a message as `\Deleted` works the same way as marking a message as `\Seen`.
+
+```csharp
+folder.AddFlags (uid, MessageFlags.Deleted, true);
+folder.Expunge ();
+```
+
+### Searching an IMAP Folder
+
 You may also be interested in sorting and searching...
 
 ```csharp
@@ -413,7 +437,7 @@ foreach (var uid in inbox.Search (query)) {
 
 // let's do the same search, but this time sort them in reverse arrival order
 var orderBy = new [] { OrderBy.ReverseArrival };
-foreach (var uid in inbox.Search (query, orderBy)) {
+foreach (var uid in inbox.Sort (query, orderBy)) {
 	var message = inbox.GetMessage (uid);
 	Console.WriteLine ("[match] {0}: {1}", uid, message.Subject);
 }
@@ -421,7 +445,7 @@ foreach (var uid in inbox.Search (query, orderBy)) {
 // you'll notice that the orderBy argument is an array... this is because you
 // can actually sort the search results based on multiple columns:
 orderBy = new [] { OrderBy.ReverseArrival, OrderBy.Subject };
-foreach (var uid in inbox.Search (query, orderBy)) {
+foreach (var uid in inbox.Sort (query, orderBy)) {
 	var message = inbox.GetMessage (uid);
 	Console.WriteLine ("[match] {0}: {1}", uid, message.Subject);
 }
@@ -429,6 +453,8 @@ foreach (var uid in inbox.Search (query, orderBy)) {
 
 Of course, instead of downloading the message, you could also fetch the summary information for the matching messages
 or do any of a number of other things with the UIDs that are returned.
+
+### Navigating Folders in IMAP
 
 How about navigating folders? MailKit can do that, too:
 
@@ -463,7 +489,7 @@ static IFolder GetSentFolder (ImapClient client, CancellationToken cancellationT
 
     foreach (var folder in personal.GetSubfolders (false, cancellationToken)) {
         foreach (var name in CommonSentFolderNames) {
-            if (folder.Name == commonName)
+            if (folder.Name == name)
                 return folder;
         }
     }
@@ -485,7 +511,8 @@ static IFolder GetSentFolder (ImapClient client, CancellationToken cancellationT
 }
 ```
 
-Another option might be to allow the user of your application to configure which folder he or she wants to use as their Sent folder, Drafts folder, Trash folder, etc.
+Another option might be to allow the user of your application to configure which folder he or she wants to use as their
+Sent folder, Drafts folder, Trash folder, etc.
 
 How you handle this is up to you.
 
@@ -506,20 +533,33 @@ tracker and look for something that might pique your interest!
 
 ## Reporting Bugs
 
-Have a bug or a feature request? [Please open a new issue](https://github.com/jstedfast/MailKit/issues).
+Have a bug or a feature request? Please open a new
+[bug report](https://github.com/jstedfast/MailKit/issues/new?template=bug_report.md)
+or
+[feature request](https://github.com/jstedfast/MailKit/issues/new?template=feature_request.md).
 
-Before opening a new issue, please search for existing issues to avoid submitting duplicates.
+Before opening a new issue, please search through any [existing issues](https://github.com/jstedfast/MailKit/issues)
+to avoid submitting duplicates. It may also be worth checking the
+[FAQ](https://github.com/jstedfast/MailKit/blob/master/FAQ.md) for common questions that other developers
+have had.
 
 If MailKit does not work with your mail server, please include a [protocol
 log](https://github.com/jstedfast/MailKit/blob/master/FAQ.md#ProtocolLog) in your bug report, otherwise
 there is nothing I can do to fix the problem.
 
 If you are getting an exception from somewhere within MailKit, don't just provide the `Exception.Message`
-string. Please include the `Exception.StackTrace` as well. The `Message`, by itself, is useless.
+string. Please include the `Exception.StackTrace` as well. The `Message`, by itself, is often useless.
 
 ## Documentation
 
 API documentation can be found at [http://www.mimekit.net/docs](http://www.mimekit.net/docs).
 
-A copy of the xml formatted API documentation is also included in the NuGet and/or
-Xamarin Component package.
+A copy of the XML-formatted API reference documentation is also included in the NuGet package.
+
+## .NET Foundation
+
+MailKit is a [.NET Foundation](https://www.dotnetfoundation.org/projects) project.
+
+This project has adopted the code of conduct defined by the [Contributor Covenant](http://contributor-covenant.org/) to clarify expected behavior in our community. For more information, see the [.NET Foundation Code of Conduct](http://www.dotnetfoundation.org/code-of-conduct).
+
+General .NET OSS discussions: [.NET Foundation forums](https://forums.dotnetfoundation.org)

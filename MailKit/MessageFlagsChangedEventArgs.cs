@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -143,10 +143,9 @@ namespace MailKit {
 		/// <exception cref="System.ArgumentOutOfRangeException">
 		/// <paramref name="index"/> is out of range.
 		/// </exception>
-		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags) : base (index)
+		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags) : base (index, uid)
 		{
 			Keywords = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
-			UniqueId = uid;
 			Flags = flags;
 		}
 
@@ -166,13 +165,12 @@ namespace MailKit {
 		/// <exception cref="System.ArgumentOutOfRangeException">
 		/// <paramref name="index"/> is out of range.
 		/// </exception>
-		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags, HashSet<string> keywords) : base (index)
+		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags, HashSet<string> keywords) : base (index, uid)
 		{
 			if (keywords == null)
 				throw new ArgumentNullException (nameof (keywords));
 
 			Keywords = keywords;
-			UniqueId = uid;
 			Flags = flags;
 		}
 
@@ -189,11 +187,10 @@ namespace MailKit {
 		/// <exception cref="System.ArgumentOutOfRangeException">
 		/// <paramref name="index"/> is out of range.
 		/// </exception>
-		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags, ulong modseq) : base (index)
+		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags, ulong modseq) : base (index, uid)
 		{
 			Keywords = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
 			ModSeq = modseq;
-			UniqueId = uid;
 			Flags = flags;
 		}
 
@@ -214,26 +211,14 @@ namespace MailKit {
 		/// <exception cref="System.ArgumentOutOfRangeException">
 		/// <paramref name="index"/> is out of range.
 		/// </exception>
-		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags, HashSet<string> keywords, ulong modseq) : base (index)
+		public MessageFlagsChangedEventArgs (int index, UniqueId uid, MessageFlags flags, HashSet<string> keywords, ulong modseq) : base (index, uid)
 		{
 			if (keywords == null)
 				throw new ArgumentNullException (nameof (keywords));
 
 			Keywords = keywords;
 			ModSeq = modseq;
-			UniqueId = uid;
 			Flags = flags;
-		}
-
-		/// <summary>
-		/// Gets the unique ID of the message that changed, if available.
-		/// </summary>
-		/// <remarks>
-		/// Gets the unique ID of the message that changed, if available.
-		/// </remarks>
-		/// <value>The unique ID of the message.</value>
-		public UniqueId? UniqueId {
-			get; internal set;
 		}
 
 		/// <summary>

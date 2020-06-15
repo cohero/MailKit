@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ using System;
 
 using NUnit.Framework;
 
+using MailKit;
 using MailKit.Search;
 
 namespace UnitTests
@@ -39,6 +40,12 @@ namespace UnitTests
 		public void TestArgumentExceptions ()
 		{
 			Assert.Throws<ArgumentOutOfRangeException> (() => new OrderBy (OrderByType.To, SortOrder.None));
+
+			Assert.Throws<ArgumentNullException> (() => new OrderByAnnotation (null, AnnotationAttribute.PrivateValue, SortOrder.Ascending));
+			Assert.Throws<ArgumentNullException> (() => new OrderByAnnotation (AnnotationEntry.AltSubject, null, SortOrder.Ascending));
+			Assert.Throws<ArgumentException> (() => new OrderByAnnotation (AnnotationEntry.AltSubject, AnnotationAttribute.Size, SortOrder.Ascending));
+			Assert.Throws<ArgumentException> (() => new OrderByAnnotation (AnnotationEntry.AltSubject, AnnotationAttribute.PrivateSize, SortOrder.Ascending));
+			Assert.Throws<ArgumentException> (() => new OrderByAnnotation (AnnotationEntry.AltSubject, AnnotationAttribute.SharedSize, SortOrder.Ascending));
 		}
 	}
 }

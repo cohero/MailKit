@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Security.Cryptography;
 
 using NUnit.Framework;
@@ -42,7 +43,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestCanReadWriteSeek ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				Assert.IsTrue (stream.CanRead);
 				Assert.IsTrue (stream.CanWrite);
 				Assert.IsFalse (stream.CanSeek);
@@ -53,7 +54,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestGetSetTimeouts ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				stream.ReadTimeout = 5;
 				Assert.AreEqual (5, stream.ReadTimeout, "ReadTimeout");
 
@@ -65,7 +66,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestRead ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("This is some random text...\r\n");
 				var buffer = new byte[32];
 				int n;
@@ -91,16 +92,16 @@ namespace UnitTests.Net.Imap {
 		}
 
 		[Test]
-		public async void TestReadAsync ()
+		public async Task TestReadAsync ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("This is some random text...\r\n");
 				var buffer = new byte[32];
 				int n;
 
-				Assert.Throws<ArgumentNullException> (async () => await stream.ReadAsync (null, 0, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, -1, buffer.Length));
-				Assert.Throws<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, 0, -1));
+				Assert.ThrowsAsync<ArgumentNullException> (async () => await stream.ReadAsync (null, 0, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, -1, buffer.Length));
+				Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await stream.ReadAsync (buffer, 0, -1));
 
 				stream.Stream.Write (data, 0, data.Length);
 				stream.Stream.Position = 0;
@@ -124,7 +125,7 @@ namespace UnitTests.Net.Imap {
 			var line1 = "This is a really long line..." + new string ('.', 4096) + "\r\n";
 			var line2 = "And this is another line...\r\n";
 
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes (line1 + line2);
 
 				stream.Stream.Write (data, 0, data.Length);
@@ -156,12 +157,12 @@ namespace UnitTests.Net.Imap {
 		}
 
 		[Test]
-		public async void TestReadLineAsync ()
+		public async Task TestReadLineAsync ()
 		{
 			var line1 = "This is a really long line..." + new string ('.', 4096) + "\r\n";
 			var line2 = "And this is another line...\r\n";
 
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes (line1 + line2);
 
 				stream.Stream.Write (data, 0, data.Length);
@@ -195,7 +196,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestReadToken ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("* atom (\\flag \"qstring\" NIL) [] \r\n");
 
 				stream.Stream.Write (data, 0, data.Length);
@@ -251,9 +252,9 @@ namespace UnitTests.Net.Imap {
 		}
 
 		[Test]
-		public async void TestReadTokenAsync ()
+		public async Task TestReadTokenAsync ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("* atom (\\flag \"qstring\" NIL) [] \r\n");
 
 				stream.Stream.Write (data, 0, data.Length);
@@ -311,7 +312,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestReadBrokenLiteralToken ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("{4096+" + new string (' ', 4096) + "}" + new string (' ', 4096) + "\r\n");
 
 				stream.Stream.Write (data, 0, data.Length);
@@ -324,9 +325,9 @@ namespace UnitTests.Net.Imap {
 		}
 
 		[Test]
-		public async void TestReadBrokenLiteralTokenAsync ()
+		public async Task TestReadBrokenLiteralTokenAsync ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var data = Encoding.ASCII.GetBytes ("{4096+" + new string (' ', 4096) + "}" + new string (' ', 4096) + "\r\n");
 
 				stream.Stream.Write (data, 0, data.Length);
@@ -341,7 +342,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestSeek ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				Assert.Throws<NotSupportedException> (() => stream.Seek (0, SeekOrigin.Begin));
 				Assert.Throws<NotSupportedException> (() => stream.Position = 500);
 				Assert.AreEqual (0, stream.Position);
@@ -352,7 +353,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestSetLength ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				Assert.Throws<NotSupportedException> (() => stream.SetLength (500));
 			}
 		}
@@ -360,7 +361,7 @@ namespace UnitTests.Net.Imap {
 		[Test]
 		public void TestWrite ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var memory = (MemoryStream) stream.Stream;
 				var buffer = new byte[8192];
 				var buf1k = new byte[1024];
@@ -424,9 +425,9 @@ namespace UnitTests.Net.Imap {
 		}
 
 		[Test]
-		public async void TestWriteAsync ()
+		public async Task TestWriteAsync ()
 		{
-			using (var stream = new ImapStream (new DummyNetworkStream (), null, new NullProtocolLogger ())) {
+			using (var stream = new ImapStream (new DummyNetworkStream (), new NullProtocolLogger ())) {
 				var memory = (MemoryStream) stream.Stream;
 				var buffer = new byte[8192];
 				var buf1k = new byte[1024];

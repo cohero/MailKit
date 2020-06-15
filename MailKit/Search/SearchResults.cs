@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -41,9 +41,10 @@ namespace MailKit.Search {
 		/// <remarks>
 		/// Creates a new <see cref="SearchResults"/>.
 		/// </remarks>
-		public SearchResults ()
+		/// <param name="order">The sort-order to use for the unique identifiers.</param>
+		public SearchResults (SortOrder order = SortOrder.None)
 		{
-			UniqueIds = new UniqueId[0];
+			UniqueIds = new UniqueIdSet (order);
 		}
 
 		/// <summary>

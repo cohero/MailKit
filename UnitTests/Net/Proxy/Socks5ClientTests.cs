@@ -3,7 +3,7 @@
 //
 // Author: Jeffrey Stedfast <jestedfa@microsoft.com>
 //
-// Copyright (c) 2013-2018 Xamarin Inc. (www.xamarin.com)
+// Copyright (c) 2013-2020 Xamarin Inc. (www.xamarin.com)
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@
 using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 
 using NUnit.Framework;
 
@@ -41,6 +42,7 @@ namespace UnitTests.Net.Proxy {
 	{
 		public static readonly string[] Socks5ProxyList = { "98.174.90.36", "198.12.157.31", "72.210.252.134" };
 		public static readonly int[] Socks5ProxyPorts = { 1080, 46906, 46164 };
+		const int ConnectTimeout = 5 * 1000; // 5 seconds
 
 		[Test]
 		public void TestArgumentExceptions ()
@@ -59,22 +61,22 @@ namespace UnitTests.Net.Proxy {
 			Assert.AreEqual (credentials, socks.ProxyCredentials);
 
 			Assert.Throws<ArgumentNullException> (() => socks.Connect (null, 80));
-			Assert.Throws<ArgumentNullException> (() => socks.Connect (null, 80, 100000));
-			Assert.Throws<ArgumentNullException> (async () => await socks.ConnectAsync (null, 80));
-			Assert.Throws<ArgumentNullException> (async () => await socks.ConnectAsync (null, 80, 100000));
+			Assert.Throws<ArgumentNullException> (() => socks.Connect (null, 80, ConnectTimeout));
+			Assert.ThrowsAsync<ArgumentNullException> (async () => await socks.ConnectAsync (null, 80));
+			Assert.ThrowsAsync<ArgumentNullException> (async () => await socks.ConnectAsync (null, 80, ConnectTimeout));
 
 			Assert.Throws<ArgumentException> (() => socks.Connect (string.Empty, 80));
 			Assert.Throws<ArgumentException> (() => socks.Connect (string.Empty, 80, 100000));
-			Assert.Throws<ArgumentException> (async () => await socks.ConnectAsync (string.Empty, 80));
-			Assert.Throws<ArgumentException> (async () => await socks.ConnectAsync (string.Empty, 80, 100000));
+			Assert.ThrowsAsync<ArgumentException> (async () => await socks.ConnectAsync (string.Empty, 80));
+			Assert.ThrowsAsync<ArgumentException> (async () => await socks.ConnectAsync (string.Empty, 80, ConnectTimeout));
 
 			Assert.Throws<ArgumentOutOfRangeException> (() => socks.Connect ("www.google.com", 0));
-			Assert.Throws<ArgumentOutOfRangeException> (() => socks.Connect ("www.google.com", 0, 100000));
-			Assert.Throws<ArgumentOutOfRangeException> (async () => await socks.ConnectAsync ("www.google.com", 0));
-			Assert.Throws<ArgumentOutOfRangeException> (async () => await socks.ConnectAsync ("www.google.com", 0, 100000));
+			Assert.Throws<ArgumentOutOfRangeException> (() => socks.Connect ("www.google.com", 0, ConnectTimeout));
+			Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await socks.ConnectAsync ("www.google.com", 0));
+			Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await socks.ConnectAsync ("www.google.com", 0, ConnectTimeout));
 
-			Assert.Throws<ArgumentOutOfRangeException> (() => socks.Connect ("www.google.com", 80, -100000));
-			Assert.Throws<ArgumentOutOfRangeException> (async () => await socks.ConnectAsync ("www.google.com", 80, -100000));
+			Assert.Throws<ArgumentOutOfRangeException> (() => socks.Connect ("www.google.com", 80, -ConnectTimeout));
+			Assert.ThrowsAsync<ArgumentOutOfRangeException> (async () => await socks.ConnectAsync ("www.google.com", 80, -ConnectTimeout));
 		}
 
 		static string ResolveIPv4 (string host)
@@ -135,7 +137,7 @@ namespace UnitTests.Net.Proxy {
 				Socket socket = null;
 
 				try {
-					socket = socks.Connect ("www.google.com", 80, 10 * 1000);
+					socket = socks.Connect ("www.google.com", 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (TimeoutException) {
 					Assert.Inconclusive ("Timed out.");
@@ -149,7 +151,7 @@ namespace UnitTests.Net.Proxy {
 		}
 
 		[Test]
-		public async void TestConnectAnonymousAsync ()
+		public async Task TestConnectAnonymousAsync ()
 		{
 			using (var proxy = new Socks5ProxyListener ()) {
 				proxy.Start (IPAddress.Loopback, 0);
@@ -158,7 +160,7 @@ namespace UnitTests.Net.Proxy {
 				Socket socket = null;
 
 				try {
-					socket = await socks.ConnectAsync ("www.google.com", 80, 10 * 1000);
+					socket = await socks.ConnectAsync ("www.google.com", 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (TimeoutException) {
 					Assert.Inconclusive ("Timed out.");
@@ -182,7 +184,7 @@ namespace UnitTests.Net.Proxy {
 				Socket socket = null;
 
 				try {
-					socket = socks.Connect ("www.google.com", 80, 10 * 1000);
+					socket = socks.Connect ("www.google.com", 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (AuthenticationException) {
 					// this is what we expect to get
@@ -199,7 +201,7 @@ namespace UnitTests.Net.Proxy {
 		}
 
 		[Test]
-		public async void TestConnectWithCredentialsAsync ()
+		public async Task TestConnectWithCredentialsAsync ()
 		{
 			using (var proxy = new Socks5ProxyListener ()) {
 				proxy.Start (IPAddress.Loopback, 0);
@@ -209,7 +211,7 @@ namespace UnitTests.Net.Proxy {
 				Socket socket = null;
 
 				try {
-					socket = await socks.ConnectAsync ("www.google.com", 80, 10 * 1000);
+					socket = await socks.ConnectAsync ("www.google.com", 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (AuthenticationException) {
 					// this is what we expect to get
@@ -236,7 +238,7 @@ namespace UnitTests.Net.Proxy {
 				Socket socket = null;
 
 				try {
-					socket = socks.Connect ("www.google.com", 80, 10 * 1000);
+					socket = socks.Connect ("www.google.com", 80, ConnectTimeout);
 					socket.Disconnect (false);
 					Assert.Fail ("Expected AuthenticationException");
 				} catch (AuthenticationException) {
@@ -254,7 +256,7 @@ namespace UnitTests.Net.Proxy {
 		}
 
 		[Test]
-		public async void TestConnectWithBadCredentialsAsync ()
+		public async Task TestConnectWithBadCredentialsAsync ()
 		{
 			using (var proxy = new Socks5ProxyListener ()) {
 				proxy.Start (IPAddress.Loopback, 0);
@@ -264,7 +266,7 @@ namespace UnitTests.Net.Proxy {
 				Socket socket = null;
 
 				try {
-					socket = await socks.ConnectAsync ("www.google.com", 80, 10 * 1000);
+					socket = await socks.ConnectAsync ("www.google.com", 80, ConnectTimeout);
 					socket.Disconnect (false);
 					Assert.Fail ("Expected AuthenticationException");
 				} catch (AuthenticationException) {
@@ -295,7 +297,7 @@ namespace UnitTests.Net.Proxy {
 					return;
 
 				try {
-					socket = socks.Connect (host, 80, 10 * 1000);
+					socket = socks.Connect (host, 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (TimeoutException) {
 					Assert.Inconclusive ("Timed out.");
@@ -309,7 +311,7 @@ namespace UnitTests.Net.Proxy {
 		}
 
 		[Test]
-		public async void TestConnectByIPv4Async ()
+		public async Task TestConnectByIPv4Async ()
 		{
 			using (var proxy = new Socks5ProxyListener ()) {
 				proxy.Start (IPAddress.Loopback, 0);
@@ -322,7 +324,7 @@ namespace UnitTests.Net.Proxy {
 					return;
 
 				try {
-					socket = await socks.ConnectAsync (host, 80, 10 * 1000);
+					socket = await socks.ConnectAsync (host, 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (TimeoutException) {
 					Assert.Inconclusive ("Timed out.");
@@ -349,7 +351,7 @@ namespace UnitTests.Net.Proxy {
 					return;
 
 				try {
-					socket = socks.Connect (host, 80, 10 * 1000);
+					socket = socks.Connect (host, 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (ProxyProtocolException ex) {
 					Assert.IsTrue (ex.Message.StartsWith ($"Failed to connect to {host}:80: ", StringComparison.Ordinal), ex.Message);
@@ -366,7 +368,7 @@ namespace UnitTests.Net.Proxy {
 		}
 
 		[Test]
-		public async void TestConnectByIPv6Async ()
+		public async Task TestConnectByIPv6Async ()
 		{
 			using (var proxy = new Socks5ProxyListener ()) {
 				proxy.Start (IPAddress.Loopback, 0);
@@ -379,13 +381,36 @@ namespace UnitTests.Net.Proxy {
 					return;
 
 				try {
-					socket = await socks.ConnectAsync (host, 80, 10 * 1000);
+					socket = await socks.ConnectAsync (host, 80, ConnectTimeout);
 					socket.Disconnect (false);
 				} catch (ProxyProtocolException ex) {
 					Assert.IsTrue (ex.Message.StartsWith ($"Failed to connect to {host}:80: ", StringComparison.Ordinal), ex.Message);
 					Assert.Inconclusive (ex.Message);
 				} catch (TimeoutException) {
 					Assert.Inconclusive ("Timed out.");
+				} catch (Exception ex) {
+					Assert.Fail (ex.Message);
+				} finally {
+					if (socket != null)
+						socket.Dispose ();
+				}
+			}
+		}
+
+		[Test]
+		public async Task TestTimeoutException ()
+		{
+			using (var proxy = new Socks5ProxyListener ()) {
+				proxy.Start (IPAddress.Loopback, 0);
+
+				var socks = new Socks5Client (proxy.IPAddress.ToString (), proxy.Port);
+				Socket socket = null;
+
+				try {
+					socket = await socks.ConnectAsync ("example.com", 25, 1000);
+					socket.Disconnect (false);
+				} catch (TimeoutException) {
+					Assert.Pass ();
 				} catch (Exception ex) {
 					Assert.Fail (ex.Message);
 				} finally {
